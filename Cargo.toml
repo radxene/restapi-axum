@@ -1,0 +1,27 @@
+[package]
+name = "restapi-axum"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+argon2 = "0.5.1"
+axum = { version = "0.6.19", features = ["default", "ws", "tower-log"] }
+dotenvy = "0.15.7"
+dotenvy_macro = "0.15.7"
+futures = "0.3.28"
+jsonwebtoken = "8.3.0"
+serde = { version = "1.0.177", features = ["derive"] }
+serde_json = "1.0.104"
+serde_with = "3.1.0"
+sqlx = { version = "0.7.1", features = ["runtime-tokio-native-tls", "postgres", "uuid", "time"] }
+sync_wrapper = "0.1.2"
+time = { version = "0.3.23", features = ["macros"] }
+tokio = { version = "1.29.1", features = ["rt", "rt-multi-thread", "macros"] }
+tokio-stream = "0.1.14"
+tokio-tungstenite = "0.20.0"
+tower = { version = "0.4.13", features = ["log"] }
+tower-cookies = "0.9.0"
+tower-http = { version = "0.4.3", features = ["fs", "auth"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"
+validator = { version = "0.16.1", features = ["derive"] }

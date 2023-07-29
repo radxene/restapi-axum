@@ -1,0 +1,10 @@
+[config]
+skip_core_tasks = true
+
+[tasks.watch-src]
+script = [
+  "cargo watch -q -c -w src/ -x run",
+]
+
+[tasks.dev]
+run_task = { name = ["watch-src"], parallel = false }
