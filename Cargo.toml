@@ -1,6 +1,9 @@
 [package]
 name = "restapi-axum"
 version = "0.1.0"
+authors = [
+  "Radu Ene <message.raduene@gmail.com>"
+]
 edition = "2021"
 
 [dependencies]

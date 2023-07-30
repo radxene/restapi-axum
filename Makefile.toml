@@ -1,10 +1,15 @@
 [config]
 skip_core_tasks = true
 
+[tasks.docker]
+script = [
+  "docker compose -f docker-compose.yml --env-file .env up -d database",
+]
+
 [tasks.watch-src]
 script = [
   "cargo watch -q -c -w src/ -x run",
 ]
 
 [tasks.dev]
-run_task = { name = ["watch-src"], parallel = false }
+run_task = { name = ["docker", "watch-src"], parallel = false }
