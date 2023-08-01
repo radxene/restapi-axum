@@ -1,30 +1,28 @@
 mod config;
 mod middleware;
-mod models;
-mod routes;
+mod modules;
+mod shared;
 mod utils;
 
 use std::error::Error;
 
 use config::{AppConf, PostgresConf};
-use routes::app_routes;
+use modules::app::routes::app_routes;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    tracing_subscriber::fmt::init();
-    dotenvy::dotenv()?;
+    AppConf::init()?;
 
-    let addr = AppConf::get_socket_addr();
     let pool = PostgresConf::connect().await;
+    let addr = AppConf::get_app_addr();
+    let state = AppConf::get_app_state(&pool);
+    let app = app_routes(&state).await;
 
-    let app = app_routes(pool);
-
-    tracing::info!("->> Listening on {}", &addr);
+    AppConf::listening(&addr);
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
-        .await
-        .unwrap();
+        .await?;
 
     Ok(())
 }
