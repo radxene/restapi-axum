@@ -1,3 +1,3 @@
-mod failed_response;
+mod failed_sqlx_response;
 
-pub use failed_response::*;
+pub use failed_sqlx_response::*;

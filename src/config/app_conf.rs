@@ -3,11 +3,12 @@ use std::{
     net::{SocketAddr, ToSocketAddrs},
 };
 
+use axum::extract::FromRef;
 use dotenvy_macro::dotenv;
 use sqlx::{Pool, Postgres};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-#[derive(Debug, Clone)]
+#[derive(FromRef, Clone)]
 pub struct AppState {
     pub db: Pool<Postgres>,
 }

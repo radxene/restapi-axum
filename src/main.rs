@@ -1,13 +1,7 @@
-mod config;
-mod middleware;
-mod modules;
-mod shared;
-mod utils;
-
 use std::error::Error;
 
-use config::{AppConf, PostgresConf};
-use modules::app::routes::app_routes;
+use restapi_axum::config::{AppConf, PostgresConf};
+use restapi_axum::modules::app::routes::app_routes;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
