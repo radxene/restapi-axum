@@ -1,41 +1,53 @@
+use std::sync::Arc;
+
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
-    response::{IntoResponse, Response},
+    response::Response,
     routing::{get, post},
-    Json, Router,
+    Router,
 };
 
-use crate::{
-    config::AppState, extractor::JsonExtractor, modules::author::entities::AuthorEntity,
-    shared::models::response::FailedSqlxResponse,
-};
+use crate::{config::AppState, extractor::ValidJson, modules::author::entities::AuthorEntity};
 
-async fn get_author(State(state): State<AppState>, Path(id): Path<i64>) -> Response {
-    match AuthorEntity::get_author(state.db, id).await {
-        Ok(author) => (StatusCode::OK, Json(author)).into_response(),
-        Err(_) => {
-            FailedSqlxResponse::to_pair(StatusCode::NOT_FOUND, "Author not found").into_response()
-        }
-    }
+#[derive(Debug, PartialEq, strum::Display, strum::EnumString, strum::IntoStaticStr)]
+pub enum AuthorPath {
+    #[strum(serialize = "/author")]
+    CreateAuthor,
+    #[strum(serialize = "/author/:id")]
+    GetAuthor,
 }
 
-async fn create_author(
-    State(state): State<AppState>,
-    JsonExtractor(payload): JsonExtractor<AuthorEntity>,
+#[utoipa::path(
+    get,
+    path = "/author/:id",
+    responses(
+        (status = StatusCode::OK, description = "Get the author by id"),
+        (status = StatusCode::NOT_FOUND, description = "Not found author by id", body = RejectJsonResponse),
+    ),
+    params(
+        ("id" = i64, Path, description = "Author database id to get Author for"),
+    ),
+)]
+pub async fn get_author(State(state): State<Arc<AppState>>, Path(id): Path<i64>) -> Response {
+    AuthorEntity::get_author(&state.db, id).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/author",
+    responses(
+        (status = StatusCode::CREATED, description = "Create the author")
+    )
+)]
+pub async fn create_author(
+    State(state): State<Arc<AppState>>,
+    ValidJson(payload): ValidJson<AuthorEntity>,
 ) -> Response {
-    match AuthorEntity::create_author(state.db, &payload).await {
-        Ok(author) => (StatusCode::CREATED, Json(author)).into_response(),
-        Err(_) => FailedSqlxResponse::to_pair(
-            StatusCode::UNPROCESSABLE_ENTITY,
-            "The author was not created",
-        )
-        .into_response(),
-    }
+    AuthorEntity::create_author(&state.db, &payload).await
 }
 
-pub fn author_routes() -> Router<AppState> {
+pub fn author_routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/author", post(create_author))
-        .route("/author/:id", get(get_author))
+        .route(AuthorPath::CreateAuthor.into(), post(create_author))
+        .route(AuthorPath::GetAuthor.into(), get(get_author))
 }

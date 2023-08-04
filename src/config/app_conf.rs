@@ -1,6 +1,7 @@
 use std::{
     error::Error,
     net::{SocketAddr, ToSocketAddrs},
+    sync::Arc,
 };
 
 use axum::extract::FromRef;
@@ -38,7 +39,8 @@ impl AppConf {
         *server.first().unwrap()
     }
 
-    pub fn get_app_state(pool: &Pool<Postgres>) -> AppState {
-        AppState { db: pool.clone() }
+    pub fn get_app_state(pool: &Pool<Postgres>) -> Arc<AppState> {
+        let state = AppState { db: pool.clone() };
+        Arc::new(state)
     }
 }

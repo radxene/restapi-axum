@@ -1,40 +1,56 @@
 use axum::{
-    extract::{rejection::JsonRejection, FromRequest},
-    http::StatusCode,
+    async_trait,
+    body::HttpBody,
+    extract::{rejection::JsonRejection, FromRequest, Json as ExtJson},
+    http::Request,
     response::IntoResponse,
     response::Response,
-    Json,
+    BoxError,
 };
-use serde_json::json;
+use serde::de::DeserializeOwned;
+use thiserror::Error;
+use validator::{Validate, ValidationErrors};
 
-#[derive(FromRequest)]
-#[from_request(via(Json), rejection(ApiError))]
-pub struct JsonExtractor<T>(pub T);
+use crate::shared::models::dto::response::{BadRequestResponse, UnprocessableResponse};
 
-#[derive(Debug)]
-pub struct ApiError {
-    status: StatusCode,
-    message: String,
-}
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ValidJson<T>(pub T);
 
-impl From<JsonRejection> for ApiError {
-    fn from(rejection: JsonRejection) -> Self {
-        Self {
-            // rejection.status() default is 422 (Unprocessable Entity)
-            status: StatusCode::BAD_REQUEST,
-            message: rejection.body_text(),
-        }
+#[async_trait]
+impl<S, B, T> FromRequest<S, B> for ValidJson<T>
+where
+    S: Send + Sync,
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    B::Error: Into<BoxError>,
+    T: DeserializeOwned + Validate,
+{
+    type Rejection = ServerError;
+
+    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+        let ExtJson(value) = ExtJson::<T>::from_request(req, state).await?;
+        value.validate()?;
+        Ok(Self(value))
     }
 }
 
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let payload = json!({
-            "code": self.status.as_u16(),
-            "message": self.message,
-            "origin": "derive_from_request"
-        });
+#[derive(Debug, Error)]
+pub enum ServerError {
+    #[error(transparent)]
+    ValidationError(#[from] ValidationErrors),
 
-        (self.status, axum::Json(payload)).into_response()
+    #[error(transparent)]
+    AxumJsonError(#[from] JsonRejection),
+}
+
+impl IntoResponse for ServerError {
+    fn into_response(self) -> Response {
+        match self {
+            Self::ValidationError(err) => BadRequestResponse::report(
+                "Validation failed.",
+                serde_json::to_value(&err).unwrap(),
+            ),
+            Self::AxumJsonError(err) => UnprocessableResponse::report(err.to_string().as_str()),
+        }
     }
 }

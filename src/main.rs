@@ -10,7 +10,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pool = PostgresConf::connect().await;
     let addr = AppConf::get_app_addr();
     let state = AppConf::get_app_state(&pool);
-    let app = app_routes(&state).await;
+    let app = app_routes(state).await;
 
     AppConf::listening(&addr);
 
